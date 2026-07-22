@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>贪吃蛇大冒险 · Snake Adventure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 主菜单 -->
+    <section id="screen-menu" class="screen active">
+      <div class="menu-bg"></div>
+      <div class="menu-content">
+        <h1 class="brand">贪吃蛇大冒险</h1>
+        <p class="tagline">十关闯关 · 解谜技巧 · 经典重生</p>
+        <div class="menu-actions">
+          <button id="btn-start" class="btn btn-primary">开始游戏</button>
+          <button id="btn-levels" class="btn btn-ghost">选择关卡</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 关卡选择 -->
+    <section id="screen-levels" class="screen">
+      <div class="panel">
+        <header class="panel-header">
+          <h2>选择关卡</h2>
+          <button id="btn-levels-back" class="btn btn-ghost btn-sm">返回</button>
+        </header>
+        <div id="level-grid" class="level-grid"></div>
+      </div>
+    </section>
+
+    <!-- 游戏界面 -->
+    <section id="screen-game" class="screen">
+      <header class="hud">
+        <div class="hud-item">
+          <span class="hud-label">关卡</span>
+          <span id="hud-level" class="hud-value">1</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">得分</span>
+          <span id="hud-score" class="hud-value">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">剩余豆</span>
+          <span id="hud-beans" class="hud-value">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">生命</span>
+          <span id="hud-lives" class="hud-value">—</span>
+        </div>
+        <div id="hud-extra" class="hud-item hud-extra hidden">
+          <span class="hud-label" id="hud-extra-label">时间</span>
+          <span id="hud-extra-value" class="hud-value">60</span>
+        </div>
+      </header>
+
+      <div class="canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+        <div id="overlay-pause" class="overlay hidden">
+          <p>已暂停</p>
+          <span>按空格继续</span>
+        </div>
+        <div id="overlay-reverse" class="banner hidden">⚠ 反向控制中</div>
+      </div>
+
+      <footer class="hints">
+        <span>方向键移动</span>
+        <span>空格暂停</span>
+        <span>R 重开本关</span>
+        <button id="btn-menu" class="btn btn-ghost btn-sm">主菜单</button>
+      </footer>
+    </section>
+
+    <!-- 结算弹窗 -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <h2 id="modal-title">过关成功</h2>
+        <p id="modal-score" class="modal-score">得分：0</p>
+        <p id="modal-reason" class="modal-reason"></p>
+        <div class="modal-actions">
+          <button id="btn-modal-primary" class="btn btn-primary">下一关</button>
+          <button id="btn-modal-secondary" class="btn btn-ghost">重试</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

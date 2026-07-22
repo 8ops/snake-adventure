@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>贪吃蛇大冒险 · Snake Adventure</title>
+  <title>贪吃蛇大冒险 V2 · Snake Adventure</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -16,11 +16,13 @@
       <div class="menu-bg"></div>
       <div class="menu-content">
         <h1 class="brand">贪吃蛇大冒险</h1>
-        <p class="tagline">十关闯关 · 解谜技巧 · 经典重生</p>
+        <p class="tagline">V2 · 野生蛇生态 · 十二皮肤 · 无自杀判定</p>
         <div class="menu-actions">
           <button id="btn-start" class="btn btn-primary">开始游戏</button>
           <button id="btn-levels" class="btn btn-ghost">选择关卡</button>
+          <button id="btn-skins" class="btn btn-ghost">换装</button>
         </div>
+        <p id="menu-score" class="menu-score">累计得分：0</p>
       </div>
     </section>
 
@@ -32,6 +34,18 @@
           <button id="btn-levels-back" class="btn btn-ghost btn-sm">返回</button>
         </header>
         <div id="level-grid" class="level-grid"></div>
+      </div>
+    </section>
+
+    <!-- 皮肤换装 -->
+    <section id="screen-skins" class="screen">
+      <div class="panel panel-skins">
+        <header class="panel-header">
+          <h2>换装</h2>
+          <button id="btn-skins-back" class="btn btn-ghost btn-sm">返回</button>
+        </header>
+        <p class="skin-hint">累计得分解锁皮肤 · 当前皮肤会在关卡重启后保留</p>
+        <div id="skin-grid" class="skin-grid"></div>
       </div>
     </section>
 
@@ -64,7 +78,8 @@
         <canvas id="game-canvas"></canvas>
         <div id="overlay-pause" class="overlay hidden">
           <p>已暂停</p>
-          <span>按空格继续</span>
+          <span>按空格继续 · 点「换装」可改皮肤</span>
+          <button id="btn-pause-skins" class="btn btn-ghost btn-sm" style="margin-top:0.75rem">换装</button>
         </div>
         <div id="overlay-reverse" class="banner hidden">⚠ 反向控制中</div>
       </div>

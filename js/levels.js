@@ -1,14 +1,14 @@
 import { mulberry32, cellKey } from "./utils.js";
 
 /**
- * 10 关配置：尺寸、机制、豆数、障碍生成。
- * build(levelDef) 返回可玩地图数据。
+ * V2 关卡：提高障碍密度，配置野生蛇与反应时间覆盖。
+ * wildlife: [{ type, count, spawnDelay? }]
  */
 export const LEVELS = [
   {
     id: 1,
     name: "初探",
-    theme: "基础移动教学",
+    theme: "教学关卡 · 无墙",
     width: 15,
     height: 15,
     beanCount: 5,
@@ -17,7 +17,8 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [],
     movingObstacles: false,
     buildObstacles: () => [],
     buildMud: () => [],
@@ -26,7 +27,7 @@ export const LEVELS = [
   {
     id: 2,
     name: "碎石迷宫",
-    theme: "绕行静态障碍",
+    theme: "静态障碍 · 觅食绿蛇",
     width: 18,
     height: 18,
     beanCount: 8,
@@ -35,30 +36,17 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "forager", count: 1, spawnDelay: 10000 }],
     movingObstacles: false,
-    buildObstacles: (w, h, rng) => {
-      // 5 个分散石块，避开中心出生区
-      const cells = [];
-      const used = new Set();
-      const avoid = centerAvoid(w, h, 3);
-      while (cells.length < 5) {
-        const x = 1 + Math.floor(rng() * (w - 2));
-        const y = 1 + Math.floor(rng() * (h - 2));
-        const k = cellKey(x, y);
-        if (used.has(k) || avoid.has(k)) continue;
-        used.add(k);
-        cells.push({ x, y });
-      }
-      return cells;
-    },
+    buildObstacles: (w, h, rng) => scattered(w, h, rng, 9, 3),
     buildMud: () => [],
     buildSpikes: () => [],
   },
   {
     id: 3,
     name: "狭路相逢",
-    theme: "长条形墙壁",
+    theme: "窄道 · 游荡灰蛇",
     width: 20,
     height: 12,
     beanCount: 10,
@@ -67,22 +55,23 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "wanderer", count: 1, spawnDelay: 10000 }],
     movingObstacles: false,
     buildObstacles: (w, h) => {
       const cells = [];
-      // 中间横墙，留两处缺口
       const midY = Math.floor(h / 2);
-      for (let x = 2; x < w - 2; x++) {
-        if (x === 5 || x === 14) continue;
+      for (let x = 1; x < w - 1; x++) {
+        if (x === 4 || x === 5 || x === 14 || x === 15) continue;
         cells.push({ x, y: midY });
       }
-      // 竖向短墙
       for (let y = 1; y < midY - 1; y++) {
+        cells.push({ x: 8, y });
         cells.push({ x: 9, y });
       }
       for (let y = midY + 2; y < h - 1; y++) {
         cells.push({ x: 11, y });
+        cells.push({ x: 12, y });
       }
       return cells;
     },
@@ -92,7 +81,7 @@ export const LEVELS = [
   {
     id: 4,
     name: "穿墙奇术",
-    theme: "穿墙模式",
+    theme: "边界传送 · 专注操作",
     width: 20,
     height: 20,
     beanCount: 12,
@@ -101,21 +90,27 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [],
     movingObstacles: false,
-    // 内部围墙环，可穿外边界
     buildObstacles: (w, h) => {
       const cells = [];
       const m = 4;
       for (let x = m; x < w - m; x++) {
-        if (x === Math.floor(w / 2)) continue;
+        if (x === Math.floor(w / 2) || x === Math.floor(w / 2) - 1) continue;
         cells.push({ x, y: m });
         cells.push({ x, y: h - 1 - m });
       }
       for (let y = m + 1; y < h - 1 - m; y++) {
-        if (y === Math.floor(h / 2)) continue;
+        if (y === Math.floor(h / 2) || y === Math.floor(h / 2) - 1) continue;
         cells.push({ x: m, y });
         cells.push({ x: w - 1 - m, y });
+      }
+      // 额外内环碎片
+      for (let x = 7; x < 13; x++) {
+        if (x === 9 || x === 10) continue;
+        cells.push({ x, y: 8 });
+        cells.push({ x, y: 11 });
       }
       return cells;
     },
@@ -125,7 +120,7 @@ export const LEVELS = [
   {
     id: 5,
     name: "减速泥潭",
-    theme: "泥潭减速 50%",
+    theme: "移速 -50% · 抢食绿蛇",
     width: 20,
     height: 20,
     beanCount: 15,
@@ -134,23 +129,22 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "forager", count: 1, spawnDelay: 10000 }],
     movingObstacles: false,
-    buildObstacles: (w, h, rng) => scattered(w, h, rng, 6, 3),
-    buildMud: (w, h) => {
-      // 3 块 2x2 泥潭
-      return [
-        ...rect(4, 4, 2, 2),
-        ...rect(14, 8, 2, 2),
-        ...rect(8, 15, 2, 2),
-      ].filter((c) => c.x < w && c.y < h);
-    },
+    buildObstacles: (w, h, rng) => scattered(w, h, rng, 10, 3),
+    buildMud: (w, h) => [
+      ...rect(3, 3, 3, 3),
+      ...rect(13, 7, 3, 3),
+      ...rect(7, 14, 3, 3),
+      ...rect(15, 15, 2, 2),
+    ].filter((c) => c.x < w && c.y < h),
     buildSpikes: () => [],
   },
   {
     id: 6,
     name: "移动挡板",
-    theme: "水平移动障碍",
+    theme: "动态障碍 · 游荡灰蛇",
     width: 20,
     height: 20,
     beanCount: 15,
@@ -159,22 +153,23 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "wanderer", count: 1, spawnDelay: 8000 }],
     movingObstacles: true,
-    buildObstacles: (w, h, rng) => scattered(w, h, rng, 4, 3),
+    buildObstacles: (w, h, rng) => scattered(w, h, rng, 7, 3),
     buildMud: () => [],
     buildSpikes: () => [],
-    // 移动挡板定义：水平往返
     buildMovers: (w) => [
-      { y: 5, length: 4, x: 2, dir: 1, minX: 1, maxX: w - 5, speedSteps: 1 },
-      { y: 10, length: 5, x: 8, dir: -1, minX: 1, maxX: w - 6, speedSteps: 1 },
-      { y: 15, length: 3, x: 4, dir: 1, minX: 1, maxX: w - 4, speedSteps: 1 },
+      { y: 4, length: 4, x: 2, dir: 1, minX: 1, maxX: w - 5, speedSteps: 1 },
+      { y: 8, length: 5, x: 8, dir: -1, minX: 1, maxX: w - 6, speedSteps: 1 },
+      { y: 12, length: 4, x: 3, dir: 1, minX: 1, maxX: w - 5, speedSteps: 1 },
+      { y: 16, length: 3, x: 5, dir: -1, minX: 1, maxX: w - 4, speedSteps: 1 },
     ],
   },
   {
     id: 7,
     name: "生命危机",
-    theme: "尖刺陷阱 · 3 命",
+    theme: "尖刺扣血 · 双绿蛇",
     width: 22,
     height: 22,
     beanCount: 20,
@@ -183,16 +178,17 @@ export const LEVELS = [
     lives: 3,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "forager", count: 2, spawnDelay: 10000 }],
     movingObstacles: false,
-    buildObstacles: (w, h, rng) => scattered(w, h, rng, 10, 3),
+    buildObstacles: (w, h, rng) => scattered(w, h, rng, 16, 3),
     buildMud: () => [],
-    buildSpikes: (w, h, rng) => scattered(w, h, rng, 12, 4, "spike"),
+    buildSpikes: (w, h, rng) => scattered(w, h, rng, 16, 4, "spike"),
   },
   {
     id: 8,
     name: "镜像世界",
-    theme: "反向控制 · 每 5 秒切换",
+    theme: "反向控制 · 反应 150ms",
     width: 22,
     height: 22,
     beanCount: 18,
@@ -201,22 +197,28 @@ export const LEVELS = [
     lives: null,
     timeLimit: null,
     reverseInterval: 5000,
-    hasEnemy: false,
+    reactionTimeMs: 150,
+    wildlife: [{ type: "wanderer", count: 1, spawnDelay: 8000 }],
     movingObstacles: false,
     buildObstacles: (w, h) => {
-      // 对称迷宫
       const cells = [];
       const cx = Math.floor(w / 2);
-      for (let i = 3; i < h - 3; i++) {
+      for (let i = 2; i < h - 2; i++) {
         if (i % 4 === 0) continue;
+        cells.push({ x: cx - 4, y: i });
         cells.push({ x: cx - 3, y: i });
         cells.push({ x: cx + 3, y: i });
+        cells.push({ x: cx + 4, y: i });
       }
       for (let x = 2; x < w - 2; x++) {
-        if (x === cx || x === cx - 3 || x === cx + 3) continue;
+        if (x >= cx - 4 && x <= cx - 3) continue;
+        if (x >= cx + 3 && x <= cx + 4) continue;
+        if (x === cx) continue;
         if (x % 3 === 0) {
+          cells.push({ x, y: 3 });
           cells.push({ x, y: 4 });
           cells.push({ x, y: h - 5 });
+          cells.push({ x, y: h - 4 });
         }
       }
       return cells;
@@ -227,7 +229,7 @@ export const LEVELS = [
   {
     id: 9,
     name: "时间竞速",
-    theme: "60 秒倒计时",
+    theme: "60 秒 · 双绿蛇抢分",
     width: 25,
     height: 25,
     beanCount: 25,
@@ -236,15 +238,17 @@ export const LEVELS = [
     lives: null,
     timeLimit: 60,
     reverseInterval: null,
-    hasEnemy: false,
+    reactionTimeMs: null,
+    wildlife: [{ type: "forager", count: 2, spawnDelay: 8000 }],
     movingObstacles: false,
     buildObstacles: (w, h, rng) => {
-      const cells = scattered(w, h, rng, 28, 4);
-      // 石阵走廊
-      for (let y = 6; y < 18; y++) {
+      const cells = scattered(w, h, rng, 36, 4);
+      for (let y = 5; y < 20; y++) {
         if (y % 3 === 0) continue;
+        cells.push({ x: 7, y });
         cells.push({ x: 8, y });
         cells.push({ x: 16, y });
+        cells.push({ x: 17, y });
       }
       return dedupe(cells);
     },
@@ -254,7 +258,7 @@ export const LEVELS = [
   {
     id: 10,
     name: "最终试炼",
-    theme: "墙+刺+泥潭 · Boss 红蛇",
+    theme: "综合地形 · 红蛇+灰蛇",
     width: 25,
     height: 25,
     beanCount: 30,
@@ -263,15 +267,20 @@ export const LEVELS = [
     lives: 3,
     timeLimit: null,
     reverseInterval: null,
-    hasEnemy: true,
+    reactionTimeMs: null,
+    wildlife: [
+      { type: "attacker", count: 1, spawnDelay: 6000 },
+      { type: "wanderer", count: 1, spawnDelay: 10000 },
+    ],
     movingObstacles: false,
-    buildObstacles: (w, h, rng) => scattered(w, h, rng, 18, 4),
+    buildObstacles: (w, h, rng) => scattered(w, h, rng, 26, 4),
     buildMud: (w, h) => [
-      ...rect(3, 3, 3, 2),
-      ...rect(18, 12, 3, 2),
-      ...rect(10, 20, 3, 2),
+      ...rect(2, 2, 4, 3),
+      ...rect(17, 11, 4, 3),
+      ...rect(9, 19, 4, 3),
+      ...rect(18, 3, 3, 2),
     ].filter((c) => c.x < w && c.y < h),
-    buildSpikes: (w, h, rng) => scattered(w, h, rng, 10, 5, "spike"),
+    buildSpikes: (w, h, rng) => scattered(w, h, rng, 14, 5, "spike"),
   },
 ];
 
@@ -324,9 +333,6 @@ function dedupe(cells) {
   });
 }
 
-/**
- * 构建关卡实例地图
- */
 export function buildLevel(levelId) {
   const def = LEVELS.find((l) => l.id === levelId);
   if (!def) throw new Error(`Unknown level ${levelId}`);
@@ -338,13 +344,11 @@ export function buildLevel(levelId) {
   const obstacles = dedupe(def.buildObstacles(w, h, rng));
   const wallSet = new Set(obstacles.map((c) => cellKey(c.x, c.y)));
 
-  // 泥潭避开墙
   const mud = dedupe(def.buildMud(w, h, rng)).filter(
     (c) => !wallSet.has(cellKey(c.x, c.y))
   );
   const mudSet = new Set(mud.map((c) => cellKey(c.x, c.y)));
 
-  // 尖刺避开墙与泥潭
   const spikes = dedupe(def.buildSpikes(w, h, rng)).filter((c) => {
     const k = cellKey(c.x, c.y);
     return !wallSet.has(k) && !mudSet.has(k);
@@ -353,10 +357,8 @@ export function buildLevel(levelId) {
 
   const movers = def.buildMovers ? def.buildMovers(w, h) : [];
 
-  // 占用集合（豆不能刷在墙/刺/蛇身上；泥潭可走但也不刷豆）
   const blocked = new Set([...wallSet, ...spikeSet]);
 
-  // 蛇出生：中心偏左，水平向右
   const startX = Math.floor(w / 2) - 2;
   const startY = Math.floor(h / 2);
   const snakeBody = [
@@ -366,12 +368,6 @@ export function buildLevel(levelId) {
   ];
   for (const s of snakeBody) blocked.add(cellKey(s.x, s.y));
 
-  // 第 10 关预留敌蛇出生区
-  if (def.hasEnemy) {
-    for (let i = 0; i < 4; i++) blocked.add(cellKey(w - 4 + i, 3));
-  }
-
-  // 刷豆：避开占用格
   const beans = [];
   const beanSet = new Set();
   let guard = 0;
@@ -381,7 +377,6 @@ export function buildLevel(levelId) {
     const y = Math.floor(rng() * h);
     const k = cellKey(x, y);
     if (blocked.has(k) || beanSet.has(k) || mudSet.has(k)) continue;
-    // 远离蛇头至少 2 格
     if (Math.abs(x - startX) + Math.abs(y - startY) < 3) continue;
     beanSet.add(k);
     beans.push({ x, y, gold: false });

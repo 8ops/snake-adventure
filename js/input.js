@@ -1,15 +1,16 @@
 /**
- * 输入队列：缓冲转向，避免帧率导致的鬼影操作与 180° 掉头。
- * 每次蛇移动一步消费最多一个有效转向。
+ * 输入缓冲：记录按键时间戳，经 reactionTimeMs 延迟后才生效转向。
  */
 import { KEY_TO_DIR, DIR, isOpposite, OPPOSITE } from "./utils.js";
+import { GAME_SETTINGS } from "./config.js";
 
 export class InputController {
   constructor() {
     this.queue = [];
-    this.maxQueue = 2;
+    this.maxQueue = 3;
     this.enabled = true;
     this.reverse = false;
+    this.reactionTimeMs = GAME_SETTINGS.inputConfig.reactionTimeMs;
     this._onKeyDown = this._onKeyDown.bind(this);
   }
 
@@ -24,6 +25,10 @@ export class InputController {
   reset() {
     this.queue = [];
     this.reverse = false;
+  }
+
+  setReactionTime(ms) {
+    this.reactionTimeMs = Math.max(0, ms);
   }
 
   setReverse(on) {
@@ -48,19 +53,23 @@ export class InputController {
   enqueue(dir) {
     if (this.queue.length >= this.maxQueue) return;
     const last = this.queue[this.queue.length - 1];
-    // 不重复入队同一方向
-    if (last && last.x === dir.x && last.y === dir.y) return;
-    this.queue.push(dir);
+    if (last && last.dir.x === dir.x && last.dir.y === dir.y) return;
+    this.queue.push({ dir, t: performance.now() });
   }
 
   /**
-   * @param {{x:number,y:number}} currentDir 当前蛇方向
-   * @returns {{x:number,y:number}|null} 下一步应采用的方向
+   * @param {{x:number,y:number}} currentDir
+   * @param {number} [now]
+   * @returns {{x:number,y:number}|null}
    */
-  consume(currentDir) {
+  consume(currentDir, now = performance.now()) {
     while (this.queue.length > 0) {
-      const next = this.queue.shift();
-      if (isOpposite(currentDir, next)) continue; // 禁止瞬间掉头
+      const item = this.queue[0];
+      if (now - item.t < this.reactionTimeMs) break;
+
+      this.queue.shift();
+      const next = item.dir;
+      if (isOpposite(currentDir, next)) continue;
       if (next.x === currentDir.x && next.y === currentDir.y) continue;
       return next;
     }

@@ -130,6 +130,12 @@ body {
   letter-spacing: 0.12em;
 }
 
+.menu-score {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .menu-actions {
   margin-top: 2.5rem;
   display: flex;
@@ -260,6 +266,89 @@ body {
   display: block;
   margin-top: 0.2rem;
   font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.level-card .wild-tag {
+  color: var(--accent);
+  margin-top: 0.35rem;
+}
+
+/* —— 皮肤换装 —— */
+#screen-skins.active {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(ellipse at top, #1a4030 0%, transparent 50%),
+    var(--bg-deep);
+}
+
+.panel-skins {
+  width: min(780px, 100%);
+}
+
+.skin-hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.skin-card {
+  text-align: left;
+  background: rgba(30, 77, 50, 0.45);
+  border: 1px solid rgba(93, 255, 138, 0.18);
+  border-radius: 10px;
+  padding: 0.85rem;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.skin-card:hover:not(:disabled) {
+  border-color: var(--snake);
+  transform: translateY(-2px);
+}
+
+.skin-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(232, 184, 74, 0.35);
+}
+
+.skin-card.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.skin-card .swatch {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.skin-card .name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.skin-card .req {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
   color: var(--muted);
 }
 
